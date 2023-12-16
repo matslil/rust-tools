@@ -37,10 +37,30 @@ impl<T> Grid2D<T> {
         }
     }
 
+    /// Get number of rows
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.rows() == 2);
+    /// ```
     pub fn rows(&self) -> usize {
         self.grid.len()
     }
 
+    /// Get number of rows
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.cols() == 5);
+    /// ```
     pub fn cols(&self) -> usize {
         if let Some(col) = self.grid.get(0) {
             col.len()
@@ -51,6 +71,14 @@ impl<T> Grid2D<T> {
 }
 
 impl<T> std::default::Default for Grid2D<T> {
+    /// Create an empty grid.
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid: Grid2D::<i32> = Grid2D::default();
+    /// assert!(grid.cols() == 0);
+    /// assert!(grid.rows() == 0);
+    /// ```
     fn default() -> Self {
         Self { grid: Vec::new() }
     }
@@ -94,6 +122,17 @@ impl<T: std::fmt::Display> std::fmt::Display for Grid2D<T> {
 }
 
 impl<T: Clone, const X: usize, const Y: usize> std::convert::From<[[T;X];Y]> for Grid2D<T> {
+    /// Create grid from array of array
+    /// # Examples
+    ///
+    ///````
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<bool>::from([
+    ///     [true, false, false, true],
+    ///     [false, true, true, true],
+    ///     [true, true, true, false]
+    ///     ]);
+    ///````
     fn from(value: [[T;X];Y]) -> Self {
         let mut grid: Vec<Vec<T>> = Vec::new();
         for row in &value {

@@ -4,15 +4,37 @@ pub struct Grid2D<T> {
 }
 
 impl<T> Grid2D<T> {
+    /// Create Grid2D from str iterator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let test_map: &str = concat!(
+    ///     "X..X..X.\n",
+    ///     "..X..X..\n",
+    ///     ".X..X..X\n",
+    ///     "X..X..X.\n",
+    ///     "..X..X..\n",
+    ///     ".X..X..X\n");
+    /// let grid = Grid2D::new(
+    ///         &mut test_map.lines(),
+    ///         std::collections::HashMap::from([
+    ///             ('X', 1),
+    ///             ('.', 0),
+    ///         ]));
+    /// println!("{:#}", grid);
+    /// ```
     pub fn new(
         lines: &mut dyn Iterator<Item=&str>,
         translations: std::collections::HashMap<char, T>) -> Self
-        where T: Clone + std::fmt::Display {
-            Self{ grid: lines.take_while(|s| *s != "").map(|s| {
-                s.chars().map(|c| translations[&c].clone()).collect::<Vec<T>>()
-            })
-            .collect::<Vec<Vec<T>>>()
-            }
+        where T: Clone + std::fmt::Display
+    {
+        Self{ grid: lines.take_while(|s| *s != "").map(|s| {
+            s.chars().map(|c| translations[&c].clone()).collect::<Vec<T>>()
+        })
+        .collect::<Vec<Vec<T>>>()
+        }
     }
 
     pub fn rows(&self) -> usize {
@@ -28,7 +50,28 @@ impl<T> Grid2D<T> {
     }
 }
 
+impl<T> std::default::Default for Grid2D<T> {
+    fn default() -> Self {
+        Self { grid: Vec::new() }
+    }
+}
+
 impl<T: std::fmt::Display> std::fmt::Display for Grid2D<T> {
+    /// Display format, where the alternate form ('#') prepends
+    /// each line with the row number
+    ///
+    /// # Examples
+    ///
+    ///````
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<bool>::from([
+    ///     [true, false, false, true],
+    ///     [false, true, true, true],
+    ///     [true, true, true, false]
+    ///     ]);
+    /// println!("Without row numbers: {}", grid);
+    /// println!("With row numbers: {:#}", grid);
+    /// ````
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if f.alternate() {
             let row_digits: usize = (self.rows().checked_ilog10().unwrap_or(0) + 1) as usize;
@@ -50,6 +93,16 @@ impl<T: std::fmt::Display> std::fmt::Display for Grid2D<T> {
     }
 }
 
+impl<T: Clone, const X: usize, const Y: usize> std::convert::From<[[T;X];Y]> for Grid2D<T> {
+    fn from(value: [[T;X];Y]) -> Self {
+        let mut grid: Vec<Vec<T>> = Vec::new();
+        for row in &value {
+            grid.push(row.to_vec());
+        }
+        Self { grid: grid }
+    }
+}
+
 #[cfg(test)]
 mod grid2d {
     use super::*;
@@ -61,17 +114,17 @@ mod grid2d {
         "..X..X..\n",
         ".X..X..X\n");
 
-    #[derive(PartialEq, Eq, Clone)]
+    #[derive(PartialEq, Eq, Clone, Debug)]
     enum TestCell {
-        occupied,
-        not_occupied,
+        Occupied,
+        NotOccupied,
     }
 
     impl std::fmt::Display for TestCell {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
             write!(f, "{}", match self {
-                TestCell::occupied => '#',
-                TestCell::not_occupied => '.',
+                TestCell::Occupied => '#',
+                TestCell::NotOccupied => '.',
             })
         }
     }
@@ -101,11 +154,7 @@ mod grid2d {
 
     #[test]
     fn display() {
-        let grid = [
-            [TestCell::occupied, TestCell::not_occupied, TestCell::occupied ],
-            [TestCell::not_occupied, TestCell::not_occupied, TestCell::not_occupied],
-            [TestCell::occupied, TestCell::occupied, TestCell::not_occupied],
-        ];
+        let correct_debug = "Grid2D { grid: [[Occupied, NotOccupied, Occupied], [NotOccupied, NotOccupied, NotOccupied], [Occupied, Occupied, NotOccupied]] }";
         let correct_answer = concat!(
             "#.#\n",
             "...\n",
@@ -119,10 +168,13 @@ mod grid2d {
         let sut = Grid2D::new(
                 &mut correct_answer.lines(),
                 std::collections::HashMap::from([
-                    ('#', TestCell::occupied),
-                    ('.', TestCell::not_occupied),
+                    ('#', TestCell::Occupied),
+                    ('.', TestCell::NotOccupied),
                 ]));
 
+        let sut_debug = format!("{:?}", sut);
+        assert!(correct_debug == sut_debug,
+            "Expected:\n{}\nGot:\n{}", correct_debug, sut_debug);
         let sut_display = format!("{}", sut);
         assert!(correct_answer == sut_display,
             "Expected: \n{}\nGot:\n{}", correct_answer, sut_display);

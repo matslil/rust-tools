@@ -1,9 +1,11 @@
-#[derive(PartialEq, Eq, Debug)]
+//! Object for handling two dimensional data.
+
+#[derive(PartialEq, Eq, Debug Clone)]
 pub struct Grid2D<T> {
     grid: Vec<Vec<T>>,
 }
 
-impl<T> Grid2D<T> {
+impl<T: Clone> Grid2D<T> {
     /// Create Grid2D from str iterator.
     ///
     /// # Examples
@@ -39,6 +41,8 @@ impl<T> Grid2D<T> {
 
     /// Get number of rows
     ///
+    /// # Examples
+    ///
     /// ```
     /// use rust_tools::grid2d::Grid2D;
     /// let grid = Grid2D::<i32>::from([
@@ -51,7 +55,9 @@ impl<T> Grid2D<T> {
         self.grid.len()
     }
 
-    /// Get number of rows
+    /// Get number of columns
+    ///
+    /// # Examples
     ///
     /// ```
     /// use rust_tools::grid2d::Grid2D;
@@ -67,6 +73,100 @@ impl<T> Grid2D<T> {
         } else {
             0
         }
+    }
+
+    /// Get row as a reference to vector.
+    ///
+    /// If there is no row at the indicated index, None will be returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.row(1) == Some(&vec![4, 3, 4, 5, 1]));
+    /// ```
+    pub fn row(&self, y: usize) -> Option<&Vec<T>> {
+        self.grid.get(y)
+    }
+
+    /// Get column as a vector.
+    ///
+    /// If there is no column at the indicated index, None will be returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.col(1) == Some(vec![1, 3]));
+    /// ```
+    pub fn col(&self, x: usize) -> Option<Vec<T>> {
+        let mut column: Vec<T> = Vec::new();
+        for y in 0..self.grid.len() {
+            if let Some(row_at_idx) = self.row(y) {
+                if let Some(entry) = row_at_idx.get(x) {
+                    column.push(entry.clone());
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        }
+        Some(column)
+    }
+
+    /// Get reference to entry at coordinates
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.get((1,1)) == Some(&3));
+    /// assert!(grid.get((1,3)) == None);
+    /// ```
+    pub fn get(&self, at: (usize, usize)) -> Option<&T> {
+        if let Some(row) = self.row(at.1) {
+            row.get(at.0)
+        } else {
+            None
+        }
+    }
+}
+
+impl<T> std::ops::Index<(usize, usize)> for Grid2D<T> {
+    type Output = T;
+
+    /// Get reference to entry at coordinates.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `at` is outside the grid.
+    /// If this is not desired, use the [`get`] function instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid[(1,1)] == 3 as i32);
+    /// ```
+    fn index(&self, at: (usize, usize)) -> &Self::Output {
+        &self.grid[at.1][at.0]
     }
 }
 
@@ -84,7 +184,7 @@ impl<T> std::default::Default for Grid2D<T> {
     }
 }
 
-impl<T: std::fmt::Display> std::fmt::Display for Grid2D<T> {
+impl<T: std::fmt::Display + Clone> std::fmt::Display for Grid2D<T> {
     /// Display format, where the alternate form ('#') prepends
     /// each line with the row number
     ///
@@ -123,6 +223,7 @@ impl<T: std::fmt::Display> std::fmt::Display for Grid2D<T> {
 
 impl<T: Clone, const X: usize, const Y: usize> std::convert::From<[[T;X];Y]> for Grid2D<T> {
     /// Create grid from array of array
+    ///
     /// # Examples
     ///
     ///````

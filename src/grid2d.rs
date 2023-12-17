@@ -75,54 +75,6 @@ impl<T: Clone> Grid2D<T> {
         }
     }
 
-    /// Get row as a reference to vector.
-    ///
-    /// If there is no row at the indicated index, None will be returned.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_tools::grid2d::Grid2D;
-    /// let grid = Grid2D::<i32>::from([
-    ///     [0, 1, 2, 3, 4],
-    ///     [4, 3, 4, 5, 1],
-    ///     ]);
-    /// assert!(grid.row(1) == Some(&vec![4, 3, 4, 5, 1]));
-    /// ```
-    pub fn row(&self, y: usize) -> Option<&Vec<T>> {
-        self.grid.get(y)
-    }
-
-    /// Get column as a vector.
-    ///
-    /// If there is no column at the indicated index, None will be returned.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_tools::grid2d::Grid2D;
-    /// let grid = Grid2D::<i32>::from([
-    ///     [0, 1, 2, 3, 4],
-    ///     [4, 3, 4, 5, 1],
-    ///     ]);
-    /// assert!(grid.col(1) == Some(vec![1, 3]));
-    /// ```
-    pub fn col(&self, x: usize) -> Option<Vec<T>> {
-        let mut column: Vec<T> = Vec::new();
-        for y in 0..self.grid.len() {
-            if let Some(row_at_idx) = self.row(y) {
-                if let Some(entry) = row_at_idx.get(x) {
-                    column.push(entry.clone());
-                } else {
-                    return None;
-                }
-            } else {
-                return None;
-            }
-        }
-        Some(column)
-    }
-
     /// Get reference to entry at coordinates
     ///
     /// # Examples
@@ -137,8 +89,70 @@ impl<T: Clone> Grid2D<T> {
     /// assert!(grid.get((1,3)) == None);
     /// ```
     pub fn get(&self, at: (usize, usize)) -> Option<&T> {
-        if let Some(row) = self.row(at.1) {
+        if let Some(row) = self.grid.get(at.1) {
             row.get(at.0)
+        } else {
+            None
+        }
+    }
+
+    /// Get mutable reference to entry at coordinates
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let mut grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// *grid.get_mut((1,1)).unwrap() = 4;
+    /// assert!(grid.get((1,1)) == Some(&4));
+    /// assert!(grid.get((1,3)) == None);
+    /// ```
+    pub fn get_mut(&mut self, at: (usize, usize)) -> Option<&mut T> {
+        if let Some(row) = self.grid.get_mut(at.1) {
+            row.get_mut(at.0)
+        } else {
+            None
+        }
+    }
+
+    /// Returns true if coordinates are present in grid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.is_in_range((1,1)) == true);
+    /// assert!(grid.is_in_range((1,3)) == false);
+    /// ```
+    pub fn is_in_range(&self, at: (usize, usize)) -> bool {
+        self.grid.len() > 0 && self.grid[0].len() > 0 &&
+            at.1 < self.grid.len() && at.0 < self.grid[0].len()
+    }
+
+    /// Returns coordinates if coordinates are present in grid,
+    /// or None otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.in_range((1,1)) == Some((1,1)));
+    /// assert!(grid.in_range((1,3)) == None);
+    /// ```
+    pub fn in_range(&self, at: (usize, usize)) -> Option<(usize, usize)> {
+        if self.is_in_range(at) {
+            Some(at)
         } else {
             None
         }

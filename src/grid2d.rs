@@ -1,6 +1,6 @@
 //! Object for handling two dimensional data.
 
-#[derive(PartialEq, Eq, Debug Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Grid2D<T> {
     grid: Vec<Vec<T>>,
 }
@@ -153,7 +153,7 @@ impl<T> std::ops::Index<(usize, usize)> for Grid2D<T> {
     /// # Panics
     ///
     /// This function will panic if `at` is outside the grid.
-    /// If this is not desired, use the [`get`] function instead.
+    /// If this is not desired, use the [`Grid2D::get`] function instead.
     ///
     /// # Examples
     ///

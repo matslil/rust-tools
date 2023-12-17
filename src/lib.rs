@@ -2,4 +2,5 @@
 //! Code](https://adventofcode.com).
 
 pub mod grid2d;
+pub mod direction;
 

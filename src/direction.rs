@@ -12,6 +12,14 @@ pub enum StraightDirection {
     West
 }
 
+/// Type declaring whether to turn left or right or keep straight ahead
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+pub enum Turn {
+    Left,
+    Right,
+    Straight,
+}
+
 impl StraightDirection {
     /// Translate from and to coordinates into a direction pointing
     /// from `from` to `to`. If the coordinates are the same, or
@@ -87,177 +95,190 @@ impl StraightDirection {
         }
     }
 
-    /// Give the new direction if turning right.
+    /// Give the new direction after doing a turn.
     ///
     /// # Examples
     ///
     /// ```
-    /// use rust_tools::direction::StraightDirection;
-    /// assert!(StraightDirection::North.right() == StraightDirection::East);
-    /// assert!(StraightDirection::West.right() == StraightDirection::North);
-    pub fn right(&self) -> StraightDirection {
-        match self {
-            StraightDirection::North => StraightDirection::East,
-            StraightDirection::East => StraightDirection::South,
-            StraightDirection::South => StraightDirection::West,
-            StraightDirection::West => StraightDirection::North,
-        }
-    }
-
-    /// Give the new direction if turning left.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rust_tools::direction::StraightDirection;
-    /// assert!(StraightDirection::North.left() == StraightDirection::West);
-    /// assert!(StraightDirection::West.left() == StraightDirection::South);
-    pub fn left(&self) -> StraightDirection {
-        match self {
-            StraightDirection::North => StraightDirection::West,
-            StraightDirection::East => StraightDirection::North,
-            StraightDirection::South => StraightDirection::East,
-            StraightDirection::West => StraightDirection::South,
+    /// use rust_tools::direction::{Turn, StraightDirection};
+    /// assert!(StraightDirection::North.turn(Turn::Right) == StraightDirection::East);
+    /// assert!(StraightDirection::West.turn(Turn::Right) == StraightDirection::North);
+    /// assert!(StraightDirection::North.turn(Turn::Left) == StraightDirection::West);
+    /// assert!(StraightDirection::West.turn(Turn::Left) == StraightDirection::South);
+    pub fn turn(&self, way: Turn) -> StraightDirection {
+        match way {
+            Turn::Straight => *self,
+            Turn::Left => {
+                match self {
+                    StraightDirection::North => StraightDirection::West,
+                    StraightDirection::East => StraightDirection::North,
+                    StraightDirection::South => StraightDirection::East,
+                    StraightDirection::West => StraightDirection::South,
+                }
+            }
+            Turn::Right => {
+                match self {
+                    StraightDirection::North => StraightDirection::East,
+                    StraightDirection::East => StraightDirection::South,
+                    StraightDirection::South => StraightDirection::West,
+                    StraightDirection::West => StraightDirection::North,
+                }
+            }
         }
     }
 }
 
+/// Bi-directional straight pipes
+///
+/// Pipes can go straight north to/from south or east to/from west, or can bend
+/// 90 degrees left or right.
 #[derive(PartialEq, Eq, Debug)]
-enum Dir {
-    EastWest,   // |
-    NorthSouth, // -
-    NorthEast,  // L
-    NorthWest,  // J
-    SouthWest,  // 7
-    SouthEast,  // F
-    Ground,     // .
-    Start,      // S
+pub enum Pipe {
+    EastWest,
+    NorthSouth,
+    NorthEast,
+    NorthWest,
+    SouthWest,
+    SouthEast,
 }
 
-impl std::convert::From<char> for Dir {
-    fn from(value: char) -> Self {
-        match value {
-            '|' => Dir::NorthSouth,
-            '-' => Dir::EastWest,
-            'L' => Dir::NorthEast,
-            'J' => Dir::NorthWest,
-            '7' => Dir::SouthWest,
-            'F' => Dir::SouthEast,
-            '.' => Dir::Ground,
-            'S' => Dir::Start,
-            _   => panic!("{}: Unknown character", value),
+impl std::convert::Into<[StraightDirection;2]> for Pipe {
+    /// Returns an array of which direction each end of the pipe is
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::direction::{Pipe, StraightDirection};
+    /// let directions: [StraightDirection;2] = Pipe::EastWest.into();
+    /// assert!(directions.contains(&StraightDirection::East) &&
+    ///     directions.contains(&StraightDirection::West));
+    fn into(self) -> [StraightDirection;2] {
+        match self {
+            Pipe::EastWest => [StraightDirection::East, StraightDirection::West],
+            Pipe::NorthSouth => [StraightDirection::North, StraightDirection::South],
+            Pipe::NorthEast => [StraightDirection::North, StraightDirection::East],
+            Pipe::NorthWest => [StraightDirection::North, StraightDirection::West],
+            Pipe::SouthWest => [StraightDirection::South, StraightDirection::West],
+            Pipe::SouthEast => [StraightDirection::South, StraightDirection::East],
         }
     }
 }
 
-impl std::convert::From<[StraightDirection;2]> for Dir {
-    fn from(value: [StraightDirection;2]) -> Self {
+impl std::convert::TryFrom<[StraightDirection;2]> for Pipe {
+    type Error = String;
+
+    /// Given two straight directions, try to make a pipe
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::direction::{Pipe, StraightDirection};
+    /// let pipe_valid = Pipe::try_from([StraightDirection::South, StraightDirection::East]);
+    /// let pipe_invalid = Pipe::try_from([StraightDirection::North, StraightDirection::North]);
+    /// assert!(pipe_valid == Ok(Pipe::SouthEast));
+    /// assert!(pipe_invalid.is_err())
+    fn try_from(value: [StraightDirection;2]) -> Result<Self, Self::Error> {
         if value.contains(&StraightDirection::North) {
-            if value.contains(&StraightDirection::East) {
-                Dir::NorthEast
+            if value.contains(&StraightDirection::West) {
+                Ok(Pipe::NorthWest)
             } else if value.contains(&StraightDirection::South) {
-                Dir::NorthSouth
+                Ok(Pipe::NorthSouth)
+            } else if value.contains(&StraightDirection::East) {
+                Ok(Pipe::NorthEast)
             } else {
-                Dir::NorthWest
+                Err(format!("{:?}: Cannot translate into pipe", value))
             }
         } else if value.contains(&StraightDirection::South) {
-            if value.contains(&StraightDirection::East) {
-                Dir::SouthEast
+            if value.contains(&StraightDirection::West) {
+                Ok(Pipe::SouthWest)
+            } else if value.contains(&StraightDirection::East) {
+                Ok(Pipe::SouthEast)
             } else {
-                Dir::SouthWest
+                Err(format!("{:?}: Cannot translate into pipe", value))
             }
-        } else {
-            Dir::EastWest
-        }
+        } else if value.contains(&StraightDirection::East) &&
+            value.contains(&StraightDirection::West) {
+                Ok(Pipe::EastWest)
+            } else {
+                Err(format!("{:?}: Cannot translate into pipe", value))
+            }
     }
 }
 
-impl std::fmt::Display for Dir {
+impl std::fmt::Display for Pipe {
+    /// Draw the pipe using Unicode characters
+    ///
+    /// # Examples
+    ///
+    ///```
+    /// use rust_tools::direction::Pipe;
+    /// println!("{}", Pipe::SouthWest);
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Dir::EastWest   => write!(f, "{}", '─'),
-            Dir::NorthSouth => write!(f, "{}", '│'),
-            Dir::NorthEast  => write!(f, "{}", '╰'),
-            Dir::NorthWest  => write!(f, "{}", '╯'),
-            Dir::SouthWest  => write!(f, "{}", '╮'),
-            Dir::SouthEast  => write!(f, "{}", '╭'),
-            Dir::Ground     => write!(f, "{}", '.'),
-            Dir::Start      => write!(f, "{}", '▒'),
+            Pipe::EastWest   => write!(f, "{}", '─'),
+            Pipe::NorthSouth => write!(f, "{}", '│'),
+            Pipe::NorthEast  => write!(f, "{}", '╰'),
+            Pipe::NorthWest  => write!(f, "{}", '╯'),
+            Pipe::SouthWest  => write!(f, "{}", '╮'),
+            Pipe::SouthEast  => write!(f, "{}", '╭'),
         }
     }
 }
 
-impl Dir {
-    fn next(&self, prev: &(usize, usize), curr: &(usize, usize)) -> (usize, usize) {
-        let diff: (isize, isize) =
-            (prev.0 as isize - curr.0 as isize,
-             prev.1 as isize - curr.1 as isize);
+impl Pipe {
+    /// Follow the pipe. Since the pipe is bidirectional, `dir` is used to
+    /// determine in which direction to go through the pipe. `dir` is the
+    /// direction of the last move.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::direction::{Pipe, StraightDirection};
+    /// assert!(Pipe::NorthEast.follow(StraightDirection::North, (2,3)) ==
+    ///     Some((StraightDirection::East, (3,3))));
+    /// assert!(Pipe::NorthSouth.follow(StraightDirection::North, (2,3)) ==
+    ///     Some((StraightDirection::North, (2,2))));
+    /// assert!(Pipe::EastWest.follow(StraightDirection::North, (2,3)) == None);
+    /// ```
+    pub fn follow(&self, from: StraightDirection, curr: (usize, usize)) -> Option<(StraightDirection, (usize, usize))> {
+        let other = self.directions().into_iter().filter(|&e| e != from).collect::<Vec<_>>();
+        if other.len() != 1 {
+            return None;
+        }
 
-        let apply: (isize, isize) = match self {
-            Dir::EastWest   => if diff == (-1, 0) {
-                (2, 0)
-            } else {
-                (-2, 0)
-            }
-            Dir::NorthSouth => if diff == (0, -1) {
-                (0, 2)
-            } else {
-                (0, -2)
-            }
-            Dir::NorthEast  => if diff == (0, -1) {
-                (1, 1)
-            } else {
-                (-1, -1)
-            }
-            Dir::NorthWest  => if diff == (0, -1) {
-                (-1, 1)
-            } else {
-                (1, -1)
-            }
-            Dir::SouthWest  => if diff == (-1, 0) {
-                (1, 1)
-            } else {
-                (-1, -1)
-            }
-            Dir::SouthEast  => if diff == (1, 0) {
-                (-1, 1)
-            } else {
-                (1, -1)
-            }
-            _               => panic!("{:?}: StraightDirection not supported!", self),
+        let to = match (from, other[0]) {
+            (StraightDirection::North, StraightDirection::South) => StraightDirection::North,
+            (StraightDirection::South, StraightDirection::North) => StraightDirection::South,
+            (_, dir) => dir,
         };
 
-        ((prev.0 as isize + apply.0) as usize, (prev.1 as isize + apply.1) as usize)
-    }
-
-    // Returns from <-> to directions
-    fn directions(&self) -> Vec<StraightDirection> {
-        match self {
-            Dir::EastWest   => vec![StraightDirection::East, StraightDirection::West],
-            Dir::NorthSouth => vec![StraightDirection::North, StraightDirection::South],
-            Dir::NorthEast  => vec![StraightDirection::North, StraightDirection::East],
-            Dir::NorthWest  => vec![StraightDirection::North, StraightDirection::West],
-            Dir::SouthWest  => vec![StraightDirection::South, StraightDirection::West],
-            Dir::SouthEast  => vec![StraightDirection::South, StraightDirection::East],
-            Dir::Ground     => Vec::new(),
-            Dir::Start      => Vec::new(),
+        if let Some(result) = to.follow(curr, 1) {
+            Some((to, result))
+        } else {
+            None
         }
     }
-}
 
-
-
-struct Map {
-    map: Vec<Vec<Dir>>,
-}
-
-fn prev(visited: &Vec<(usize, usize)>) -> &(usize, usize) {
-    assert!(visited.len() > 1);
-    &visited[visited.len() - 2]
-}
-
-fn curr(visited: &Vec<(usize, usize)>) -> &(usize, usize) {
-    assert!(visited.len() > 0);
-    &visited[visited.len() -1]
+    /// Returns from <-> to directions.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::direction::{Pipe, StraightDirection};
+    /// let dir = Pipe::NorthEast.directions();
+    /// assert!(dir.contains(&StraightDirection::North));
+    /// assert!(dir.contains(&StraightDirection::East));
+    /// ```
+    pub fn directions(&self) -> [StraightDirection;2] {
+        match self {
+            Pipe::EastWest   => [StraightDirection::East, StraightDirection::West],
+            Pipe::NorthSouth => [StraightDirection::North, StraightDirection::South],
+            Pipe::NorthEast  => [StraightDirection::North, StraightDirection::East],
+            Pipe::NorthWest  => [StraightDirection::North, StraightDirection::West],
+            Pipe::SouthWest  => [StraightDirection::South, StraightDirection::West],
+            Pipe::SouthEast  => [StraightDirection::South, StraightDirection::East],
+        }
+    }
 }
 

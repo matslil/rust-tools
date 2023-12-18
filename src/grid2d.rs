@@ -157,6 +157,59 @@ impl<T: Clone> Grid2D<T> {
             None
         }
     }
+
+    /// Get all neighbours as vector of cells
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// assert!(grid.successors((1,1)) == vec![(0usize, 1usize), (2usize, 1usize), (1usize, 0usize)]);
+    /// assert!(grid.successors((0,0)) == vec![(1usize, 0usize), (0usize, 1usize)]);
+    /// ```
+    pub fn successors(&self, at: (usize, usize)) -> Vec<(usize, usize)> {
+        let mut result = Vec::new();
+        if at.0 > 0 {
+            result.push((at.0 - 1, at.1));
+        }
+        if at.0 < (self.cols() - 1) {
+            result.push((at.0 + 1, at.1));
+        }
+        if at.1 > 0 {
+            result.push((at.0, at.1 - 1));
+        }
+        if at.1 < (self.rows() - 1) {
+            result.push((at.0, at.1 + 1));
+        }
+        result
+    }
+
+    /// Get all neighbours as vector of cells with filter function
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// let filter = |&from: &i32, &to: &i32| { (from+1) == to };
+    /// assert!(grid.successors_with((1,1), filter) == vec![(0usize, 1usize), (2usize, 1usize)]);
+    /// assert!(grid.successors_with((0,0), filter) == vec![(1usize, 0usize)]);
+    /// ```
+    pub fn successors_with<F>(&self, at: (usize, usize), f: F) -> Vec<(usize, usize)>
+    where
+        F: for<'a> Fn(&'a T, &'a T) -> bool,
+    {
+        let from_entry = &self[at];
+        let mut result = self.successors(at).into_iter().filter(|&e| f(from_entry, &self[e])).collect::<Vec<_>>();
+        result
+    }
 }
 
 impl<T> std::ops::Index<(usize, usize)> for Grid2D<T> {

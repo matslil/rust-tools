@@ -132,7 +132,7 @@ impl StraightDirection {
 ///
 /// Pipes can go straight north to/from south or east to/from west, or can bend
 /// 90 degrees left or right.
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Pipe {
     EastWest,
     NorthSouth,
@@ -278,6 +278,39 @@ impl Pipe {
             Pipe::NorthWest  => [StraightDirection::North, StraightDirection::West],
             Pipe::SouthWest  => [StraightDirection::South, StraightDirection::West],
             Pipe::SouthEast  => [StraightDirection::South, StraightDirection::East],
+        }
+    }
+
+    pub fn intersection(&self, other: Pipe) -> Vec<StraightDirection> {
+        let mut result: Vec<StraightDirection> = Vec::new();
+        let other_vec = other.directions().to_vec();
+
+        for lhs in self.directions() {
+            if other_vec.contains(&lhs) {
+                result.push(lhs);
+            }
+        }
+
+        result
+    }
+
+    /// Checks whether two pipes are connected
+    ///
+    /// Check if `self` is connected to `to`, where `to` is expected to be in
+    /// `dir` direction from `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::direction::{Pipe, StraightDirection};
+    /// assert!(Pipe::NorthSouth.is_connected_to(StraightDirection::North, Pipe::SouthWest));
+    /// assert!(Pipe::NorthWest.is_connected_to(StraightDirection::West, Pipe::NorthEast));
+    /// assert!(! Pipe::SouthEast.is_connected_to(StraightDirection::South, Pipe::EastWest));
+    pub fn is_connected_to(&self, dir: StraightDirection, to: Pipe) -> bool {
+        if self.directions().contains(&dir) && to.directions().contains(&dir.opposite()) {
+            true
+        } else {
+            false
         }
     }
 }

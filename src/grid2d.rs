@@ -1,11 +1,81 @@
 //! Object for handling two dimensional data.
 
+pub struct Iter<'a, T> {
+    grid: &'a Grid2D<T>,
+    col: usize,
+    row: usize,
+}
+
+impl<'a, T: std::fmt::Debug> std::iter::Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.col < self.grid.cols() {
+            let res = Some(&self.grid[(self.col, self.row)]);
+            self.col += 1;
+            res
+        } else if self.row < (self.grid.rows() - 1) {
+            self.col = 0;
+            self.row += 1;
+            let res = Some(&self.grid[(self.col, self.row)]);
+            self.col += 1;
+            res
+        } else {
+            None
+        }
+    }
+}
+
+pub struct RowIter<'a, T> {
+    grid: &'a Grid2D<T>,
+    row: usize,
+}
+
+impl<'a, T> std::iter::Iterator for RowIter<'a, T> {
+    type Item = Vec<&'a T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.row < self.grid.rows() {
+            let row_vec = (0..self.grid.cols())
+                .into_iter()
+                .map(|col| &self.grid[(col, self.row)])
+                .collect();
+            self.row += 1;
+            Some(row_vec)
+        } else {
+            None
+        }
+    }
+}
+
+pub struct ColIter<'a, T> {
+    grid: &'a Grid2D<T>,
+    col: usize,
+}
+
+impl<'a, T> std::iter::Iterator for ColIter<'a, T> {
+    type Item = Vec<&'a T>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.col < self.grid.cols() {
+            let col_vec = (0..self.grid.rows())
+                .into_iter()
+                .map(|row| &self.grid[(self.col, row)])
+                .collect();
+            self.col += 1;
+            Some(col_vec)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Grid2D<T> {
     grid: Vec<Vec<T>>,
 }
 
-impl<T: Clone> Grid2D<T> {
+impl<T> Grid2D<T> {
     /// Create Grid2D from str iterator.
     ///
     /// # Examples
@@ -55,6 +125,28 @@ impl<T: Clone> Grid2D<T> {
         self.grid.len()
     }
 
+    /// Get an iterator returning rows
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// let mut row_iterator = grid.row_iter();
+    /// assert!(row_iterator.next() == Some(vec![&0, &1, &2, &3, &4]));
+    /// assert!(row_iterator.next() == Some(vec![&4, &3, &4, &5, &1]));
+    /// assert!(row_iterator.next() == None);
+    /// ```
+    pub fn row_iter<'a>(&'a self) -> RowIter<'a, T> {
+        RowIter {
+            grid: self,
+            row: 0,
+        }
+    }
+
     /// Get number of columns
     ///
     /// # Examples
@@ -72,6 +164,28 @@ impl<T: Clone> Grid2D<T> {
             col.len()
         } else {
             0
+        }
+    }
+
+    /// Get an iterator returning cols
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1],
+    ///     [4, 3],
+    ///     ]);
+    /// let mut col_iterator = grid.col_iter();
+    /// assert!(col_iterator.next() == Some(vec![&0, &4]));
+    /// assert!(col_iterator.next() == Some(vec![&1, &3]));
+    /// assert!(col_iterator.next() == None);
+    /// ```
+    pub fn col_iter<'a>(&'a self) -> ColIter<'a, T> {
+        ColIter::<T> {
+            grid: self,
+            col: 0,
         }
     }
 
@@ -158,6 +272,32 @@ impl<T: Clone> Grid2D<T> {
         }
     }
 
+    /// Get iterator for the grid
+    ///
+    /// This will iterate starting from (0, 0), iterate row by row until reaching
+    /// (max, max).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// let mut iter = grid.iter();
+    /// assert!(grid.iter().skip(2).next() == Some(&2));
+    /// assert!(grid.iter().skip(7).next() == Some(&4));
+    /// assert!(grid.iter().skip(9).next() == Some(&1));
+    /// assert!(grid.iter().skip(10).next() == None);
+    pub fn iter(&self) -> Iter<T> {
+        Iter::<T> {
+            grid: self,
+            col: 0,
+            row: 0,
+        }
+    }
+
     /// Get all neighbours as vector of cells
     ///
     /// # Examples
@@ -198,17 +338,15 @@ impl<T: Clone> Grid2D<T> {
     ///     [0, 1, 2, 3, 4],
     ///     [4, 3, 4, 5, 1],
     ///     ]);
-    /// let filter = |&from: &i32, &to: &i32| { (from+1) == to };
+    /// let filter = |&to_entry: &i32, to_pos: (usize, usize)| { to_entry > 3 };
     /// assert!(grid.successors_with((1,1), filter) == vec![(0usize, 1usize), (2usize, 1usize)]);
-    /// assert!(grid.successors_with((0,0), filter) == vec![(1usize, 0usize)]);
+    /// assert!(grid.successors_with((0,0), filter) == vec![(0usize, 1usize)]);
     /// ```
     pub fn successors_with<F>(&self, at: (usize, usize), f: F) -> Vec<(usize, usize)>
     where
-        F: for<'a> Fn(&'a T, &'a T) -> bool,
+        F: for<'a> Fn(&'a T, (usize, usize)) -> bool,
     {
-        let from_entry = &self[at];
-        let mut result = self.successors(at).into_iter().filter(|&e| f(from_entry, &self[e])).collect::<Vec<_>>();
-        result
+        self.successors(at).into_iter().filter(|&e| f(&self[e], e)).collect::<Vec<_>>()
     }
 }
 

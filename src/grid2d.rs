@@ -97,8 +97,8 @@ impl<T> Grid2D<T> {
     ///         ]));
     /// println!("{:#}", grid);
     /// ```
-    pub fn new(
-        lines: &mut dyn Iterator<Item=&str>,
+    pub fn new<'a>(
+        lines: &mut impl Iterator<Item=&'a str>,
         translations: std::collections::HashMap<char, T>) -> Self
         where T: Clone + std::fmt::Display
     {
@@ -191,6 +191,8 @@ impl<T> Grid2D<T> {
 
     /// Get reference to entry at coordinates
     ///
+    /// Returns None if coordinate is outside grid.
+    ///
     /// # Examples
     ///
     /// ```
@@ -211,6 +213,8 @@ impl<T> Grid2D<T> {
     }
 
     /// Get mutable reference to entry at coordinates
+    ///
+    /// Returns None if coordinate is outside grid.
     ///
     /// # Examples
     ///
@@ -368,10 +372,34 @@ impl<T> std::ops::Index<(usize, usize)> for Grid2D<T> {
     ///     [0, 1, 2, 3, 4],
     ///     [4, 3, 4, 5, 1],
     ///     ]);
-    /// assert!(grid[(1,1)] == 3 as i32);
+    /// assert!(grid[(1,1)] == 3i32);
     /// ```
     fn index(&self, at: (usize, usize)) -> &Self::Output {
         &self.grid[at.1][at.0]
+    }
+}
+
+impl<T> std::ops::IndexMut<(usize, usize)> for Grid2D<T> {
+    /// Get mutable reference to entry at coordinates.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `at` is outside the grid.
+    /// If this is not desired, use the [`Grid2D::get_mut`] function instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let mut grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// grid[(1, 1)] = 9i32;
+    /// assert!(grid[(1,1)] == 9i32);
+    /// ```
+    fn index_mut(&mut self, at: (usize, usize)) -> &mut Self::Output {
+        &mut self.grid[at.1][at.0]
     }
 }
 

@@ -97,13 +97,16 @@ impl<T> Grid2D<T> {
     ///         ]));
     /// println!("{:#}", grid);
     /// ```
-    pub fn new<'a>(
-        lines: &mut impl Iterator<Item=&'a str>,
+    pub fn new<I, IT>(
+        lines: &mut I,
         translations: std::collections::HashMap<char, T>) -> Self
-        where T: Clone + std::fmt::Display
+        where
+            T: Clone + std::fmt::Display,
+            I: Iterator<Item = IT>,
+            IT: AsRef<str>,
     {
-        Self{ grid: lines.take_while(|s| *s != "").map(|s| {
-            s.chars().map(|c| translations[&c].clone()).collect::<Vec<T>>()
+        Self{ grid: lines.take_while(|s| s.as_ref() != "").map(|s| {
+            s.as_ref().chars().map(|c| translations[&c].clone()).collect::<Vec<T>>()
         })
         .collect::<Vec<Vec<T>>>()
         }

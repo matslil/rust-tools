@@ -29,17 +29,20 @@ impl StraightDirection {
     ///
     /// ```
     /// use rust_tools::direction::StraightDirection;
-    /// assert!(StraightDirection::from_pos((0, 0), (13, 0)) == Some(StraightDirection::West));
+    /// assert!(StraightDirection::from_pos((0, 0), (13, 0)) == Some(StraightDirection::East));
+    /// assert!(StraightDirection::from_pos((1, 0), (0, 0)) == Some(StraightDirection::West));
+    /// assert!(StraightDirection::from_pos((1, 1), (1, 0)) == Some(StraightDirection::North));
+    /// assert!(StraightDirection::from_pos((1, 1), (1, 5)) == Some(StraightDirection::South));
     /// assert!(StraightDirection::from_pos((0, 0), (13, 13)) == None);
     pub fn from_pos(from: (usize, usize), to: (usize, usize)) -> Option<Self> {
         let north_south = match to.1.cmp(&from.1) {
-            std::cmp::Ordering::Greater => Some(StraightDirection::North),
-            std::cmp::Ordering::Less => Some(StraightDirection::South),
+            std::cmp::Ordering::Greater => Some(StraightDirection::South),
+            std::cmp::Ordering::Less => Some(StraightDirection::North),
             _ => None,
         };
         let east_west = match to.0.cmp(&from.0) {
-            std::cmp::Ordering::Greater => Some(StraightDirection::West),
-            std::cmp::Ordering::Less => Some(StraightDirection::East),
+            std::cmp::Ordering::Greater => Some(StraightDirection::East),
+            std::cmp::Ordering::Less => Some(StraightDirection::West),
             _ => None,
         };
 
@@ -305,6 +308,7 @@ impl Pipe {
     /// use rust_tools::direction::{Pipe, StraightDirection};
     /// assert!(Pipe::NorthSouth.is_connected_to(StraightDirection::North, Pipe::SouthWest));
     /// assert!(Pipe::NorthWest.is_connected_to(StraightDirection::West, Pipe::NorthEast));
+    /// assert!(Pipe::EastWest.is_connected_to(StraightDirection::East, Pipe::SouthWest));
     /// assert!(! Pipe::SouthEast.is_connected_to(StraightDirection::South, Pipe::EastWest));
     pub fn is_connected_to(&self, dir: StraightDirection, to: Pipe) -> bool {
         if self.directions().contains(&dir) && to.directions().contains(&dir.opposite()) {

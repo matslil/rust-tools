@@ -29,22 +29,22 @@ impl std::convert::From<[StraightDirection;2]> for Turn {
     ///
     /// ```
     /// use rust_tools::direction::{Turn, StraightDirection};
-    /// let turn_right = Turn::from([StraightDirection::South, StraightDirection::East]);
-    /// let turn_left = Turn::from([StraightDirection::North, StraightDirection::East]);
+    /// let turn_left = Turn::from([StraightDirection::South, StraightDirection::East]);
+    /// let turn_right = Turn::from([StraightDirection::North, StraightDirection::East]);
     /// let turn_straight = Turn::from([StraightDirection::North, StraightDirection::South]);
     /// assert!(turn_right== Turn::Right);
     /// assert!(turn_left == Turn::Left);
     /// assert!(turn_straight == Turn::Straight)
     fn from(value: [StraightDirection;2]) -> Self {
         match (value[0], value[1]) {
-            (StraightDirection::North, StraightDirection::West) => Turn::Right,
-            (StraightDirection::West, StraightDirection::South) => Turn::Right,
-            (StraightDirection::South, StraightDirection::East) => Turn::Right,
-            (StraightDirection::East, StraightDirection::North) => Turn::Right,
-            (StraightDirection::North, StraightDirection::East) => Turn::Left,
-            (StraightDirection::East, StraightDirection::South) => Turn::Left,
-            (StraightDirection::South, StraightDirection::West) => Turn::Left,
+            (StraightDirection::North, StraightDirection::West) => Turn::Left,
             (StraightDirection::West, StraightDirection::South) => Turn::Left,
+            (StraightDirection::South, StraightDirection::East) => Turn::Left,
+            (StraightDirection::East, StraightDirection::North) => Turn::Left,
+            (StraightDirection::North, StraightDirection::East) => Turn::Right,
+            (StraightDirection::East, StraightDirection::South) => Turn::Right,
+            (StraightDirection::South, StraightDirection::West) => Turn::Right,
+            (StraightDirection::West, StraightDirection::North) => Turn::Right,
             (_, _) => Turn::Straight,
         }
     }
@@ -76,7 +76,6 @@ impl StraightDirection {
             _ => None,
         };
 
-        println!("{:?} {:?}", north_south, east_west);
         match (north_south, east_west) {
             (None, None) => None,
             (Some(_), Some(_)) => None,

@@ -20,7 +20,25 @@ pub enum Turn {
     Straight,
 }
 
-impl std::convert::From<[StraightDirection;2]> for Turn {
+impl std::fmt::Display for Turn {
+    /// Get a character showing the direction
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::direction::Turn;
+    /// println!("Left: {}, Right: {}, Straight: {}", Turn::Left, Turn::Right, Turn::Straight);
+    /// ```
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Turn::Left => '<',
+            Turn::Right => '>',
+            Turn::Straight => '|',
+        })
+    }
+}
+
+impl<T: AsRef<[StraightDirection]>> std::convert::From<T> for Turn {
     /// Given two straight directions, try make a turn
     ///
     /// Note that the order of the directions matter.
@@ -29,14 +47,17 @@ impl std::convert::From<[StraightDirection;2]> for Turn {
     ///
     /// ```
     /// use rust_tools::direction::{Turn, StraightDirection};
-    /// let turn_left = Turn::from([StraightDirection::South, StraightDirection::East]);
-    /// let turn_right = Turn::from([StraightDirection::North, StraightDirection::East]);
-    /// let turn_straight = Turn::from([StraightDirection::North, StraightDirection::South]);
+    /// let rotate_left = Turn::from(&vec![StraightDirection::North, StraightDirection::East,
+    /// StraightDirection::East, StraightDirection::North, StraightDirection::West]);
+    /// assert!(rotate_left == Turn::Left);
+    /// let turn_left = Turn::from(&[StraightDirection::South, StraightDirection::East]);
+    /// let turn_right = Turn::from(&[StraightDirection::North, StraightDirection::East]);
+    /// let turn_straight = Turn::from(&[StraightDirection::North, StraightDirection::South]);
     /// assert!(turn_right== Turn::Right);
     /// assert!(turn_left == Turn::Left);
     /// assert!(turn_straight == Turn::Straight)
-    fn from(value: [StraightDirection;2]) -> Self {
-        match (value[0], value[1]) {
+    fn from(value: T) -> Self {
+        let rotation = value.as_ref().windows(2).map(|e| match (e[0], e[1]) {
             (StraightDirection::North, StraightDirection::West) => Turn::Left,
             (StraightDirection::West, StraightDirection::South) => Turn::Left,
             (StraightDirection::South, StraightDirection::East) => Turn::Left,
@@ -46,6 +67,17 @@ impl std::convert::From<[StraightDirection;2]> for Turn {
             (StraightDirection::South, StraightDirection::West) => Turn::Right,
             (StraightDirection::West, StraightDirection::North) => Turn::Right,
             (_, _) => Turn::Straight,
+        }).fold(0isize, |acc, e| acc + match e {
+            Turn::Right => 1,
+            Turn::Left => -1,
+            Turn::Straight => 0,
+        });
+        if rotation > 0 {
+            Turn::Right
+        } else if rotation < 0 {
+            Turn::Left
+        } else {
+            Turn::Straight
         }
     }
 }

@@ -297,12 +297,39 @@ impl<T> Grid2D<T> {
     /// assert!(grid.iter().skip(7).next() == Some(&4));
     /// assert!(grid.iter().skip(9).next() == Some(&1));
     /// assert!(grid.iter().skip(10).next() == None);
+    /// ```
     pub fn iter(&self) -> Iter<T> {
         Iter::<T> {
             grid: self,
             col: 0,
             row: 0,
         }
+    }
+
+    /// Get iterator for mutable entries for the grid
+    ///
+    /// This will iterate starting from (0, 0), iterate row by row until reaching
+    /// (max, max).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::grid2d::Grid2D;
+    /// let mut grid = Grid2D::<i32>::from([
+    ///     [0, 1, 2, 3, 4],
+    ///     [4, 3, 4, 5, 1],
+    ///     ]);
+    /// for element in grid.iter_mut() {
+    ///     *element += 1;
+    /// }
+    /// println!("{:?}", grid);
+    /// assert!(grid.iter().skip(2).next() == Some(&3));
+    /// assert!(grid.iter().skip(7).next() == Some(&5));
+    /// assert!(grid.iter().skip(9).next() == Some(&2));
+    /// assert!(grid.iter().skip(10).next() == None);
+    /// ```
+    pub fn iter_mut(&mut self) -> std::iter::Flatten<std::slice::IterMut<Vec<T>>> {
+        self.grid.iter_mut().flatten()
     }
 
     /// Get all neighbours as vector of cells
@@ -426,7 +453,7 @@ impl<T: std::fmt::Display + Clone> std::fmt::Display for Grid2D<T> {
     ///
     /// # Examples
     ///
-    ///````
+    /// ```
     /// use rust_tools::grid2d::Grid2D;
     /// let grid = Grid2D::<bool>::from([
     ///     [true, false, false, true],
@@ -435,7 +462,7 @@ impl<T: std::fmt::Display + Clone> std::fmt::Display for Grid2D<T> {
     ///     ]);
     /// println!("Without row numbers: {}", grid);
     /// println!("With row numbers: {:#}", grid);
-    /// ````
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         if f.alternate() {
             let row_digits: usize = (self.rows().checked_ilog10().unwrap_or(0) + 1) as usize;
@@ -462,14 +489,14 @@ impl<T: Clone, const X: usize, const Y: usize> std::convert::From<[[T;X];Y]> for
     ///
     /// # Examples
     ///
-    ///````
+    /// ```
     /// use rust_tools::grid2d::Grid2D;
     /// let grid = Grid2D::<bool>::from([
     ///     [true, false, false, true],
     ///     [false, true, true, true],
     ///     [true, true, true, false]
     ///     ]);
-    ///````
+    /// ```
     fn from(value: [[T;X];Y]) -> Self {
         let mut grid: Vec<Vec<T>> = Vec::new();
         for row in &value {

@@ -371,11 +371,30 @@ impl Pipe {
     /// assert!(Pipe::NorthWest.is_connected_to(StraightDirection::West, Pipe::NorthEast));
     /// assert!(Pipe::EastWest.is_connected_to(StraightDirection::East, Pipe::SouthWest));
     /// assert!(! Pipe::SouthEast.is_connected_to(StraightDirection::South, Pipe::EastWest));
+    /// ```
     pub fn is_connected_to(&self, dir: StraightDirection, to: Pipe) -> bool {
         if self.directions().contains(&dir) && to.directions().contains(&dir.opposite()) {
             true
         } else {
             false
+        }
+    }
+
+    /// Given direction into pipe, return direction of other end of pipe
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rust_tools::direction::{Pipe, StraightDirection};
+    /// assert!(Pipe::NorthWest.other(StraightDirection::North) == Some(StraightDirection::West));
+    /// assert!(Pipe::EastWest.other(StraightDirection::West) == Some(StraightDirection::East));
+    /// ```
+    pub fn other(&self, dir: StraightDirection) -> Option<StraightDirection> {
+        let other_dir = self.directions().iter().map(|e| *e).filter(|&e| e != dir).collect::<Vec<_>>();
+        if other_dir.len() == 1 {
+            Some(other_dir[0])
+        } else {
+            None
         }
     }
 }
